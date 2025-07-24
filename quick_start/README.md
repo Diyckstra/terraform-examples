@@ -20,7 +20,7 @@ Terraform – современный инструмент для автомат�
 
 ## Установка и настройка
 
-> :information_source: &nbsp; Инструкция написана и протестирована с использованием Terraform v1.0.8 для провайдеров rockitcloud v24.1.0 и AWS v3.63.0. Приведённая ниже информация актуальна для указанных версий. Чтобы гарантировать стабильность и совместимость, мы зафиксировали версию провайдера в коде конфигурации.
+> :information_source: &nbsp; Инструкция написана и протестирована с использованием Terraform v1.12.1 для провайдера rockitcloud v25.2.0. Приведённая ниже информация актуальна для указанных версий. Чтобы гарантировать стабильность и совместимость, мы зафиксировали версию провайдера в коде конфигурации.
 
 Terraform распространяется в виде исполняемого файла и доступен для различных ОС (Linux/Windows/macOS и не только). Скачать нужную версию можно [на официальной странице загрузки](https://www.terraform.io/downloads.html). Если официальная страница будет недоступна, скачайте дистрибутив [здесь](https://hc-releases.website.k2.cloud/terraform/current/). После загрузки и распаковки архива рекомендуем перенести извлечённый файл в любую папку, заданную в текущей переменной окружения `PATH`(или добавить целевую папку в эту переменную).
 Для ОС семейства Linux это может быть `/usr/local/bin/`, для Windows – `C:\Windows\system32` (для доступа к системным папкам требуются права администратора в ОС). Таким образом, вам не придётся каждый раз указывать полный путь к файлу.
@@ -47,7 +47,7 @@ Terraform работает с разными облачными платформ
 
 Создадим файл `providers.tf`, в котором опишем необходимых провайдеров и их настройки:
 
-```bash
+```hcl
 # Фиксируем версию провайдера, чтобы гарантировать совместимость
 # и стабильную работу написанной конфигурации
 terraform {
@@ -56,59 +56,64 @@ terraform {
       # Используем локальное зеркало К2 Облака
       # как источник загрузки провайдера c2devel/rockitcloud
       source  = "hc-registry.website.k2.cloud/c2devel/rockitcloud"
-      version = "24.1.0"
+      version = "~> 25.2"
     }
   }
 }
 
 # Подключаем и настраиваем провайдера для работы
-# со всеми сервисами К2 Облака, кроме объектного хранилища
+# со всеми сервисами К2 Облака
 provider "aws" {
-  endpoints {
-    ec2 = "https://ec2.k2.cloud"
-  }
-
-  skip_credentials_validation = true
-  skip_requesting_account_id  = true
-  skip_region_validation      = true
-
   insecure   = false
   access_key = var.access_key
   secret_key = var.secret_key
-  region     = "ru-msk"
-}
 
-# Подключаем и настраиваем провайдера
-# для работы с объектным хранилищем облака
-provider "aws" {
-  alias = "noregion"
-  endpoints {
-    s3 = "https://s3.k2.cloud"
-  }
-
-  skip_credentials_validation = true
-  skip_requesting_account_id  = true
-  skip_region_validation      = true
-
-  insecure   = false
-  access_key = var.access_key
-  secret_key = var.secret_key
-  region     = "us-east-1"
+  # Указываем регион К2 Облака
+  region = "ru-msk"
 }
 ```
-
-Первый блок `provider` относится к работе со всеми сервисами К2 Облака за исключением объектного хранилища – за работу с ним отвечает второй блок.
-Если планируется работа только с К2 Облаком, эту часть кода можно переиспользовать без изменений.
 
 Отметим, что `access_key` и `secret_key` не содержат самих данных, а указывают на значения переменных.
 Это сделано специально, чтобы готовую конфигурацию можно было передавать другим людям, не опасаясь раскрыть значения ключей.
 Кроме того, такой подход позволяет быстро задать все ключи в одном месте и избежать множества правок в самом коде при их изменении.
 
+Если в конфигурации указан регион К2 Облака, адреса для подключения к API будут сформированы провайдером.
+Для переопределения адресов API можно использовать блок provider.endpoints, тогда в качестве региона можно указать значение `region-1`.
+
+#### Блок `provider.endpoints`
+
+Блок `provider.endpoints` позволяет явно задать адреса для подключения к API К2 Облака.
+Необходимый набор адресов зависит от используемых ресурсов.
+Таблица соответствия между категорией ресурса и именем эндпоинта приведена [в документации провайдера](https://docs.tf.k2.cloud/#api-endpoints).
+
+Получить адреса и другие настройки для доступа к API можно [в профиле пользователя](https://docs.k2.cloud/ru/startguide.html#get-api-credentials).
+
+```hcl
+provider "aws" {
+  endpoints {
+    autoscaling   = "https://autoscaling.ru-msk.k2.cloud"
+    backup        = "https://backup.ru-msk.k2.cloud"
+    cloudwatch    = "https://cloudwatch.ru-msk.k2.cloud"
+    directconnect = "https://directconnect.ru-msk.k2.cloud"
+    ec2           = "https://ec2.ru-msk.k2.cloud"
+    eks           = "https://eks.ru-msk.k2.cloud"
+    elbv2         = "https://elb.ru-msk.k2.cloud"
+    iam           = "https://iam.k2.cloud"
+    paas          = "https://paas.ru-msk.k2.cloud"
+    route53       = "https://route53.k2.cloud"
+  }
+
+  # ...
+}
+```
+
+> :information_source: &nbsp; Рекомендуем всегда указывать эндпоинт `ec2`. Провайдер использует его для отправки служебных запросов.
+
 ### Описание переменных – variables.tf
 
 Информация обо всех используемых переменных хранится в файле `variables.tf`, где для каждой переменной можно указать её описание и значение по умолчанию.
 
-```bash
+```hcl
 variable "secret_key" {
   description = "Enter the secret key"
 }
@@ -154,8 +159,8 @@ variable "allow_tcp_ports" {
 }
 
 variable "vm_template" {
-  description = "Enter the template ID to create a VM from (cmi-AC76609F [CentOS 8.2] by default)"
-  default     = "cmi-AC76609F"
+  description = "Enter the template ID to create a VM from (cmi-DC1CBC52 [Centos 9 Stream] by default)"
+  default     = "cmi-DC1CBC52"
 }
 
 variable "vm_instance_type" {
@@ -170,7 +175,7 @@ variable "vm_volume_type" {
 
 variable "vm_volume_size" {
   # Размер по умолчанию и шаг наращивания указаны для типа дисков gp2
-  # Для других типов дисков они могут быть иными – подробнее см. в документации на диски
+  # Для других типов дисков они могут быть иными — подробнее см. в документации на диски
   description = "Enter the volume size for VM disks (32 by default, in GiB, must be multiple of 32)"
   default     = 32
 }
@@ -183,7 +188,7 @@ variable "vm_volume_size" {
 Те значения, которые будут применяться в каждом конкретном случае, указываются в файле `terraform.tfvars`.
 Его содержимое имеет приоритет над значениями по умолчанию, это позволяет легко переопределить стандартное поведение конфигурации.
 
-```bash
+```hcl
 secret_key       = "ENTER_YOUR_SECRET_KEY_HERE"
 access_key       = "ENTER_YOUR_ACCESS_KEY_HERE"
 public_key       = "ENTER_YOUR_PUBLIC_KEY_HERE"
@@ -194,7 +199,7 @@ eips_count       = 1
 vms_count        = 2
 hostnames        = ["webapp", "db"]
 allow_tcp_ports  = [22, 80, 443]
-vm_template      = "cmi-AC76609F"
+vm_template      = "cmi-DC1CBC52"
 vm_instance_type = "m5.2small"
 vm_volume_type   = "gp2"
 vm_volume_size   = 32
@@ -207,7 +212,7 @@ vm_volume_size   = 32
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-> :warning: &nbsp; Помните, что в файле `terraform.tfvars` могут хранится чувствительные данные, которые не должны попасть к посторонним, например, значения ваших ключей. Если вы используете систему Git для хранения и версионирования конфигураций Terraform, убедитесь, что файл не попадёт в репозиторий в результате коммита – этого можно избежать, включив соответствующее исключение в `.gitignore`. Кроме того, если вы передаёте другими людям свою конфигурацию Terraform, убедитесь, что при этом не передаёте `terraform.tfvars`. Утечка ключей может привести к тому, что посторонние лица получат доступ к управлению вашей инфраструктурой.
+> :warning: &nbsp; Помните, что в файле `terraform.tfvars` могут храниться чувствительные данные, которые не должны попасть к посторонним, например, значения ваших ключей. Если вы используете систему Git для хранения и версионирования конфигураций Terraform, убедитесь, что файл не попадёт в репозиторий в результате коммита – этого можно избежать, включив соответствующее исключение в `.gitignore`. Кроме того, если вы передаёте другими людям свою конфигурацию Terraform, убедитесь, что при этом не передаёте `terraform.tfvars`. Утечка ключей может привести к тому, что посторонние лица получат доступ к управлению вашей инфраструктурой.
 
 Получить свои значения `secret_key` и `access_key` можно [в консоли управления Облаком](https://console.k2.cloud). Для этого нажмите на логин пользователя в правом верхнем углу, выберите "Профиль" и нажмите "Получить настройки доступа к API".
 
@@ -235,7 +240,7 @@ ssh-keygen -b 2048 -t rsa
 
 Сначала создадим VPC для изоляции ресурсов проекта на сетевом уровне:
 
-```bash
+```hcl
 resource "aws_vpc" "vpc" {
   # Задаём IP-адрес сети VPC в нотации CIDR (IP/Prefix)
   cidr_block         = "172.16.8.0/24"
@@ -251,7 +256,7 @@ resource "aws_vpc" "vpc" {
 
 Затем определим подсеть в ранее созданном VPC (CIDR-блок подсети должен принадлежать адресному пространству, выделенному VPC):
 
-```bash
+```hcl
 resource "aws_subnet" "subnet" {
   # Задаём зону доступности, в которой будет создана подсеть
   # Её значение берём из переменной az
@@ -260,8 +265,6 @@ resource "aws_subnet" "subnet" {
   cidr_block        = aws_vpc.vpc.cidr_block
   # Указываем VPC, где будет создана подсеть
   vpc_id            = aws_vpc.vpc.id
-  # Подсеть создаём только после создания VPC
-  depends_on        = [aws_vpc.vpc]
 
   # В тег Name для подсети включаем значение переменной az и тег Name для VPC
   tags = {
@@ -270,9 +273,32 @@ resource "aws_subnet" "subnet" {
 }
 ```
 
+Для обеспечения доступа VPC в интернет необходимо создать интернет-шлюз и добавить в таблицу маршрутизации маршрут через него:
+
+```hcl
+resource "aws_internet_gateway" "igw" {
+  # Указываем VPC, к которому будет присоединён интернет-шлюз
+  vpc_id = aws_vpc.vpc.id
+
+  # В тег Name для интернет-шлюза включаем тег Name для VPC
+  tags = {
+    Name = "IGW for ${lookup(aws_vpc.vpc.tags, "Name")}"
+  }
+}
+
+resource "aws_route" "igw_route" {
+  # Выбираем основную таблицу маршрутизации VPC
+  route_table_id         = aws_vpc.vpc.main_route_table_id
+  # Указываем IP-адрес сети назначения в нотации CIDR (IP/Prefix)
+  destination_cidr_block = "0.0.0.0/0"
+  # Указываем в качестве шлюза созданный интернет-шлюз
+  gateway_id             = aws_internet_gateway.igw.id
+}
+```
+
 Далее добавляем публичный SSH-ключ, который позже будет использоваться для доступа к виртуальной машине:
 
-```bash
+```hcl
 resource "aws_key_pair" "pubkey" {
   # Указываем имя SSH-ключа (значение берётся из переменной pubkey_name)
   key_name   = var.pubkey_name
@@ -283,19 +309,22 @@ resource "aws_key_pair" "pubkey" {
 
 Создаём бакет в объектном хранилище для хранения данных сайта и резервных копий:
 
-```bash
+```hcl
 resource "aws_s3_bucket" "bucket" {
-  provider = aws.noregion
   # Задаём имя хранилища из переменной bucket_name
   bucket = var.bucket_name
-  # Указываем разрешения на доступ
+}
+
+resource "aws_s3_bucket_acl" "bucket_acl" {
+  # Указываем разрешения на доступ к созданному бакету
+  bucket = aws_s3_bucket.bucket.id
   acl    = "private"
 }
 ```
 
 Выделяем Elastic IP для доступа к серверу с веб-приложением извне:
 
-```bash
+```hcl
 resource "aws_eip" "eips" {
   # Указываем количество выделяемых EIP в переменной eips_count –
   # это позволяет сразу выделить необходимое количество EIP.
@@ -303,8 +332,6 @@ resource "aws_eip" "eips" {
   count = var.eips_count
   # Выделяем в рамках нашего VPC
   vpc = true
-  # и только после его создания
-  depends_on = [aws_vpc.vpc]
 
   # В качестве значения тега Name берём имя хоста будущей ВМ из переменной hostnames
   # по индексу из массива
@@ -317,7 +344,7 @@ resource "aws_eip" "eips" {
 Затем создаём две группы безопасности – одна открывает доступ со всех адресов через порты 22, 80 и 443, а вторая разрешает полный доступ внутри себя самой.
 В первую позже добавим ВМ с веб-приложением, а во вторую поместим оба наших сервера, чтобы они могли взаимодействовать между собой:
 
-```bash
+```hcl
 # Создаём группу безопасности для доступа извне
 resource "aws_security_group" "ext" {
   # В рамках нашего VPC
@@ -345,15 +372,13 @@ resource "aws_security_group" "ext" {
     }
   }
 
-  # Определяем исходящее правило – разрешаем весь исходящий IPv4-трафик
+  # Определяем исходящее правило — разрешаем весь исходящий IPv4-трафик
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
-  depends_on = [aws_vpc.vpc]
 
   tags = {
     Name = "External SG"
@@ -381,8 +406,6 @@ resource "aws_security_group" "int" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  depends_on = [aws_vpc.vpc]
-
   tags = {
     Name = "Internal SG"
   }
@@ -391,34 +414,23 @@ resource "aws_security_group" "int" {
 
 Теперь напишем блок кода для создания виртуальных машин:
 
-```bash
+```hcl
 resource "aws_instance" "vms" {
   # Количество создаваемых виртуальных машин берём из переменной vms_count
   count = var.vms_count
-  # ID шаблона для создания экземпляра ВМ – из переменной vm_template
+  # ID образа для создания экземпляра ВМ — из переменной vm_template
   ami = var.vm_template
-  # Наименование типа экземпляра создаваемой ВМ – из переменной vm_instance_type
+  # Наименование типа экземпляра создаваемой ВМ — из переменной vm_instance_type
   instance_type = var.vm_instance_type
   # Назначаем экземпляру внутренний IP-адрес из созданной ранее подсети в VPC
   subnet_id = aws_subnet.subnet.id
-  # Подключаем к создаваемому экзепляру внутреннюю группу безопасности
-  vpc_security_group_ids = [aws_security_group.int.id]
-  # Добавляем на сервер публичный SSH-ключ, созданный ранее
-  key_name = var.pubkey_name
-  # Не выделяем и не присваиваем экземпляру внешний Elastic IP
-  associate_public_ip_address = false
-  # Активируем мониторинг экземпляра
-  monitoring = true
-
-  # Экземпляр создаём только после того как созданы:
-  # – подсеть
-  # – внутренняя группа безопасности
-  # – публичный SSH-ключ
-  depends_on = [
-    aws_subnet.subnet,
-    aws_security_group.int,
-    aws_key_pair.pubkey,
+  # Подключаем к создаваемому экземпляру внешнюю и внутреннюю группы безопасности
+  vpc_security_group_ids = [
+    aws_security_group.ext.id,
+    aws_security_group.int.id,
   ]
+  # Добавляем на сервер публичный SSH-ключ, созданный ранее
+  key_name = aws_key_pair.pubkey.key_name
 
   tags = {
     Name = "VM for ${var.hostnames[count.index]}"
@@ -442,26 +454,9 @@ resource "aws_instance" "vms" {
 }
 ```
 
-После создания экземпляров виртуальных машин подключаем к первому внешнюю группу безопасности:
+После создания экземпляров виртуальных машин назначаем первому Elastic IP:
 
-```bash
-resource "aws_network_interface_sg_attachment" "sg_attachment" {
-  # Получаем ID внешней группы безопасности
-  security_group_id    = aws_security_group.ext.id
-  # и ID сетевого интерфейса первого экземпляра
-  network_interface_id = aws_instance.vms[0].primary_network_interface_id
-  # Назначаем группу безопасности только после того, как созданы
-  # соответствующие экземпляр и группа безопасности
-  depends_on = [
-    aws_instance.vms,
-    aws_security_group.ext,
-  ]
-}
-```
-
-И внешний Elastic IP:
-
-```bash
+```hcl
 resource "aws_eip_association" "eips_association" {
   # Получаем количество созданных EIP
   count         = var.eips_count
@@ -478,7 +473,7 @@ resource "aws_eip_association" "eips_association" {
 В нашем случае конфигурацию завершаем единственным блоком `output`.
 Этот блок выводит в терминале Elastic IP-адрес сервера с веб-приложением, так что пользователю не надо искать его в веб-интерфейсе облака:
 
-```bash
+```hcl
 output "ip_of_webapp" {
   description = "IP of webapp"
   # Берём значение публичного IP-адреса первого экземпляра
