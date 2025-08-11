@@ -43,8 +43,8 @@ variable "allow_tcp_ports" {
 }
 
 variable "vm_template" {
-  description = "Enter the template ID to create a VM from (cmi-AC76609F [CentOS 8.2] by default)"
-  default     = "cmi-AC76609F"
+  description = "Enter the template ID to create a VM from (cmi-DC1CBC52 [Centos 9 Stream] by default)"
+  default     = "cmi-DC1CBC52"
 }
 
 variable "vm_instance_type" {
@@ -59,7 +59,7 @@ variable "vm_volume_type" {
 
 variable "vm_volume_size" {
   # Размер по умолчанию и шаг наращивания указаны для типа дисков gp2
-  # Для других типов дисков они могут быть иными – подробнее см. в документации на диски
+  # Для других типов дисков они могут быть иными — подробнее см. в документации на диски
   description = "Enter the volume size for VM disks (32 by default, in GiB, must be multiple of 32)"
   default     = 32
 }
