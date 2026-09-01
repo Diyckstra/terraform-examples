@@ -9,7 +9,6 @@ resource "aws_eip" "test1" {
 }
 
 resource "aws_eip_association" "test1" {
-  # NOTE: 'private_ip' attributes is not supported.
   instance_id = aws_instance.test.id
 
   allocation_id = aws_eip.test1.id
