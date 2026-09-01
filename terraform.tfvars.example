@@ -16,5 +16,3 @@ public_ipv4_pool = "<public_pool>"
 
 template_owner = "<desired_template_owner>"
 template_name = "<desired_template_name>"
-
-switch_id = ""

@@ -11,10 +11,6 @@ terraform {
   }
 }
 
-variable "switch_id" {
-  type = string
-}
-
 variable "access_key" {
   type = string
 }
