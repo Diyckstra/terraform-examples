@@ -6,7 +6,7 @@ terraform {
       # Используем локальное зеркало К2 Облака
       # как источник загрузки провайдера c2devel/rockitcloud
       source  = "hc-registry.website.k2.cloud/c2devel/rockitcloud"
-      version = "~> 25.2"
+      version = "~> 25.5.6"
     }
   }
 }

@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hc-registry.website.k2.cloud/c2devel/rockitcloud"
-      version = "24.1.0"
+      version = "25.5.6"
     }
     tls = {
       source  = "hc-registry.website.k2.cloud/hashicorp/tls"
