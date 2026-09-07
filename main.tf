@@ -12,41 +12,53 @@ terraform {
 }
 
 variable "switch_id" {
+  type = string
 }
 
 variable "access_key" {
+  type = string
 }
 
 variable "secret_key" {
+  type = string
 }
 
 variable "ami" {
+  type = string
 }
 
 variable "public_ipv4_pool" {
+  type = string
 }
 
 variable "region" {
+  type    = string
   default = "ru-msk"
 }
 
 variable "az" {
+  type = string
 }
 
 variable "instance_type" {
+  type    = string
   default = "m1.micro"
 }
 
 variable "account_id" {
+  type = string
 }
 
 variable "template_owner" {
+  type = string
 }
 
 variable "template_name" {
+  type = string
 }
 
 provider "tls" {
+  type = string
 }
 
 provider "aws" {
