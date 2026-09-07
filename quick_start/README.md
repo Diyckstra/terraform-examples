@@ -64,7 +64,6 @@ terraform {
 # Подключаем и настраиваем провайдера для работы
 # со всеми сервисами К2 Облака
 provider "aws" {
-  insecure   = false
   access_key = var.access_key
   secret_key = var.secret_key
 
